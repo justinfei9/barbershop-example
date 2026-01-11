@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SERVICES, BARBERS } from '../constants';
@@ -19,18 +18,50 @@ const BookingForm: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleNext = () => setStep(prev => prev + 1);
   const handleBack = () => setStep(prev => prev - 1);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
+    setErrorMessage("");
+
+    const selectedService = SERVICES.find(s => s.id === formData.serviceId)?.name || 'Unknown';
+    const selectedBarber = BARBERS.find(b => b.id === formData.barberId)?.name || 'Unknown';
+
+    const submissionData = new FormData();
+    // Pulling the key from Environment Variables
+    submissionData.append("access_key", import.meta.env.VITE_WEB3FORMS_KEY);
+    submissionData.append("subject", `New Appointment: ${formData.name}`);
+    submissionData.append("from_name", "Barbershop Booking");
+    submissionData.append("name", formData.name);
+    submissionData.append("email", formData.email);
+    submissionData.append("phone", formData.phone);
+    submissionData.append("service", selectedService);
+    submissionData.append("barber", selectedBarber);
+    submissionData.append("date", formData.date);
+    submissionData.append("time", formData.time);
+
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        body: submissionData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsSuccess(true);
+      } else {
+        setErrorMessage(data.message || "Something went wrong.");
+      }
+    } catch (error) {
+      setErrorMessage("Network error. Please try again.");
+    } finally {
       setIsSubmitting(false);
-      setIsSuccess(true);
-    }, 2000);
+    }
   };
 
   if (isSuccess) {
@@ -40,9 +71,9 @@ const BookingForm: React.FC = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-500/20 text-emerald-500 rounded-full mb-8">
             <CheckCircle2 size={48} />
           </div>
-          <h2 className="text-3xl font-serif font-bold mb-4 text-zinc-900 dark:text-zinc-100">Sample Confirmed!</h2>
+          <h2 className="text-3xl font-serif font-bold mb-4 text-zinc-900 dark:text-zinc-100">Booking Confirmed!</h2>
           <p className="text-zinc-600 dark:text-zinc-400 mb-8">
-            This is a simulation. In a real app, {formData.name} would receive an email at {formData.email} for their appointment on {formData.date} at {formData.time}.
+            Thanks {formData.name}! We've received your request for {formData.date} at {formData.time}. We'll see you soon!
           </p>
           <button 
             onClick={() => navigate('/')}
@@ -60,9 +91,9 @@ const BookingForm: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-5xl font-black mb-4 tracking-tight uppercase text-zinc-900 dark:text-zinc-100">
-            Reserve Your <span className="text-indigo-900 dark:text-amber-600 transition-colors">Sample Chair</span>
+            Reserve Your <span className="text-indigo-900 dark:text-amber-600 transition-colors">Chair</span>
           </h1>
-          <p className="text-zinc-600 dark:text-zinc-500">Test the integrated booking flow demonstration below.</p>
+          <p className="text-zinc-600 dark:text-zinc-500">Professional grooming at your fingertips.</p>
         </div>
 
         {/* Stepper Header */}
@@ -85,12 +116,11 @@ const BookingForm: React.FC = () => {
         <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden shadow-xl">
           <form onSubmit={handleSubmit} className="p-8 md:p-12">
             
-            {/* Step 1: Select Service */}
             {step === 1 && (
               <div className="animate-in fade-in duration-500 slide-in-from-right-4">
                 <h3 className="text-2xl font-bold mb-8 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
                   <ShoppingBag size={24} className="text-indigo-900 dark:text-amber-600" />
-                  Select an example service
+                  Select a service
                 </h3>
                 <div className="grid sm:grid-cols-2 gap-4">
                   {SERVICES.map((s) => (
@@ -108,7 +138,7 @@ const BookingForm: React.FC = () => {
                         onChange={() => setFormData({...formData, serviceId: s.id})}
                       />
                       <span className="text-lg font-bold mb-1 text-zinc-900 dark:text-zinc-100">{s.name}</span>
-                      <span className="text-zinc-500 dark:text-zinc-400 text-sm mb-4">{s.duration} min (Sample)</span>
+                      <span className="text-zinc-500 dark:text-zinc-400 text-sm mb-4">{s.duration} min</span>
                       <span className="text-xl font-serif font-black text-indigo-900 dark:text-amber-600 mt-auto transition-colors">${s.price}</span>
                       {formData.serviceId === s.id && <CheckCircle2 className="absolute top-4 right-4 text-indigo-900 dark:text-amber-600 transition-colors" size={20} />}
                     </label>
@@ -117,12 +147,11 @@ const BookingForm: React.FC = () => {
               </div>
             )}
 
-            {/* Step 2: Select Barber */}
             {step === 2 && (
               <div className="animate-in fade-in duration-500 slide-in-from-right-4">
                 <h3 className="text-2xl font-bold mb-8 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
                   <User size={24} className="text-indigo-900 dark:text-amber-600" />
-                  Select an example barber
+                  Select a barber
                 </h3>
                 <div className="grid sm:grid-cols-3 gap-6">
                   {BARBERS.map((b) => (
@@ -151,12 +180,11 @@ const BookingForm: React.FC = () => {
               </div>
             )}
 
-            {/* Step 3: Select Date & Time */}
             {step === 3 && (
               <div className="animate-in fade-in duration-500 slide-in-from-right-4">
                 <h3 className="text-2xl font-bold mb-8 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
                   <Calendar size={24} className="text-indigo-900 dark:text-amber-600" />
-                  Choose a sample time
+                  Choose a time
                 </h3>
                 <div className="grid md:grid-cols-2 gap-12">
                   <div>
@@ -191,20 +219,19 @@ const BookingForm: React.FC = () => {
               </div>
             )}
 
-            {/* Step 4: Contact Details */}
             {step === 4 && (
               <div className="animate-in fade-in duration-500 slide-in-from-right-4">
                 <h3 className="text-2xl font-bold mb-8 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
                   <Send size={24} className="text-indigo-900 dark:text-amber-600" />
-                  Enter Sample Info
+                  Contact Info
                 </h3>
                 <div className="grid gap-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-zinc-600 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Example Name</label>
+                      <label className="block text-zinc-600 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Full Name</label>
                       <input 
                         type="text" 
-                        placeholder="John Sample"
+                        placeholder="John Doe"
                         className="w-full bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 border p-4 rounded-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-900 dark:focus:border-amber-600 transition-colors shadow-sm"
                         value={formData.name}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -212,7 +239,7 @@ const BookingForm: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-zinc-600 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Example Phone</label>
+                      <label className="block text-zinc-600 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Phone</label>
                       <input 
                         type="tel" 
                         placeholder="(555) 000-0000"
@@ -224,7 +251,7 @@ const BookingForm: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-zinc-600 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Example Email</label>
+                    <label className="block text-zinc-600 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Email</label>
                     <input 
                       type="email" 
                       placeholder="john@example.com"
@@ -237,12 +264,12 @@ const BookingForm: React.FC = () => {
                 </div>
 
                 <div className="mt-12 p-6 bg-white/50 dark:bg-zinc-950/50 rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-inner">
-                  <h4 className="text-indigo-900 dark:text-amber-600 font-bold uppercase tracking-widest text-xs mb-4 transition-colors">Sample Summary</h4>
+                  <h4 className="text-indigo-900 dark:text-amber-600 font-bold uppercase tracking-widest text-xs mb-4">Summary</h4>
                   <div className="grid grid-cols-2 gap-y-2 text-sm">
                     <span className="text-zinc-500">Service:</span>
-                    <span className="text-zinc-900 dark:text-zinc-100 font-bold">{SERVICES.find(s => s.id === formData.serviceId)?.name || 'Not selected'}</span>
+                    <span className="text-zinc-900 dark:text-zinc-100 font-bold">{SERVICES.find(s => s.id === formData.serviceId)?.name || 'None'}</span>
                     <span className="text-zinc-500">Barber:</span>
-                    <span className="text-zinc-900 dark:text-zinc-100 font-bold">{BARBERS.find(b => b.id === formData.barberId)?.name || 'Not selected'}</span>
+                    <span className="text-zinc-900 dark:text-zinc-100 font-bold">{BARBERS.find(b => b.id === formData.barberId)?.name || 'None'}</span>
                     <span className="text-zinc-500">Appointment:</span>
                     <span className="text-zinc-900 dark:text-zinc-100 font-bold">{formData.date} at {formData.time}</span>
                   </div>
@@ -250,14 +277,9 @@ const BookingForm: React.FC = () => {
               </div>
             )}
 
-            {/* Navigation Buttons */}
             <div className="flex justify-between mt-12 pt-8 border-t border-zinc-200 dark:border-zinc-800">
               {step > 1 && (
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  className="flex items-center gap-2 text-zinc-400 hover:text-indigo-900 dark:hover:text-amber-600 font-bold uppercase tracking-widest text-sm transition-colors"
-                >
+                <button type="button" onClick={handleBack} className="flex items-center gap-2 text-zinc-400 hover:text-indigo-900 dark:hover:text-amber-600 font-bold uppercase tracking-widest text-sm transition-colors">
                   <ChevronLeft size={20} /> Back
                 </button>
               )}
@@ -266,27 +288,25 @@ const BookingForm: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleNext}
-                    disabled={
-                      (step === 1 && !formData.serviceId) ||
-                      (step === 2 && !formData.barberId) ||
-                      (step === 3 && (!formData.date || !formData.time))
-                    }
-                    className="flex items-center gap-2 bg-indigo-900 dark:bg-amber-600 hover:bg-indigo-800 dark:hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white dark:text-zinc-950 font-bold px-8 py-4 rounded-sm transition-all uppercase tracking-widest shadow-md"
+                    disabled={(step === 1 && !formData.serviceId) || (step === 2 && !formData.barberId) || (step === 3 && (!formData.date || !formData.time))}
+                    className="flex items-center gap-2 bg-indigo-900 dark:bg-amber-600 hover:bg-indigo-800 dark:hover:bg-amber-700 disabled:opacity-50 text-white dark:text-zinc-950 font-bold px-8 py-4 rounded-sm transition-all uppercase tracking-widest"
                   >
                     Continue <ChevronRight size={20} />
                   </button>
                 ) : (
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !formData.name || !formData.email || !formData.phone}
-                    className="flex items-center gap-2 bg-indigo-900 dark:bg-amber-600 hover:bg-indigo-800 dark:hover:bg-amber-700 disabled:opacity-50 text-white dark:text-zinc-950 font-bold px-10 py-4 rounded-sm transition-all uppercase tracking-widest shadow-xl"
-                  >
-                    {isSubmitting ? 'Confirming...' : 'Sample Book'}
-                  </button>
+                  <div className="flex flex-col items-end">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || !formData.name || !formData.email}
+                      className="flex items-center gap-2 bg-indigo-900 dark:bg-amber-600 hover:bg-indigo-800 dark:hover:bg-amber-700 disabled:opacity-50 text-white dark:text-zinc-950 font-bold px-10 py-4 rounded-sm transition-all uppercase tracking-widest shadow-xl"
+                    >
+                      {isSubmitting ? 'Sending...' : 'Book Appointment'}
+                    </button>
+                    {errorMessage && <p className="text-red-500 text-xs mt-2">{errorMessage}</p>}
+                  </div>
                 )}
               </div>
             </div>
-
           </form>
         </div>
       </div>
