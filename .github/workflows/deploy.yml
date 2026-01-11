@@ -12,6 +12,10 @@ permissions:
 jobs:
   build_site:
     runs-on: ubuntu-latest
+    # This block tells GitHub where the deployment is going
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,7 +29,6 @@ jobs:
         run: npm install
         
       - name: Build
-        # This part tells GitHub to use your secret key during the build
         run: npm run build
         env:
           VITE_WEB3FORMS_KEY: ${{ secrets.VITE_WEB3FORMS_KEY }}
