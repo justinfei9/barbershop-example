@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Scissors, Sun, Moon } from 'lucide-react';
 
@@ -15,6 +14,16 @@ const Navbar: React.FC<NavbarProps> = ({ isMenuOpen, setIsMenuOpen, theme, toggl
   const navigate = useNavigate();
   const isHome = location.pathname === '/';
 
+  // Prevent scrolling when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isMenuOpen]);
+
   const navLinks = [
     { name: 'Services', to: '/#services' },
     { name: 'About', to: '/#about' },
@@ -29,19 +38,28 @@ const Navbar: React.FC<NavbarProps> = ({ isMenuOpen, setIsMenuOpen, theme, toggl
       if (isHome) {
         document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
       } else {
-        navigate(to);
+        // Navigate to home then scroll
+        navigate('/');
+        setTimeout(() => {
+          document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
       }
     }
   };
 
   return (
-    <nav className="fixed w-full z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-900 transition-colors duration-300">
+    <nav className="fixed top-0 left-0 w-full z-[100] bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-900 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
+        {/* Logo */}
+        <Link 
+          to="/" 
+          className="flex items-center gap-2 group z-[110]" 
+          onClick={() => setIsMenuOpen(false)}
+        >
           <div className="p-2 bg-indigo-900 dark:bg-amber-600 rounded-lg group-hover:rotate-12 transition-all shadow-md">
             <Scissors className="text-white dark:text-zinc-950" size={24} />
           </div>
-          <span className="text-xl md:text-2xl font-serif font-black tracking-tighter uppercase italic text-zinc-900 dark:text-zinc-100 transition-colors">
+          <span className="text-xl md:text-2xl font-serif font-black tracking-tighter uppercase italic text-zinc-900 dark:text-zinc-100">
             Example Barbershop
           </span>
         </Link>
@@ -77,16 +95,18 @@ const Navbar: React.FC<NavbarProps> = ({ isMenuOpen, setIsMenuOpen, theme, toggl
         </div>
 
         {/* Mobile Actions */}
-        <div className="flex items-center gap-4 md:hidden">
+        <div className="flex items-center gap-4 md:hidden z-[110]">
           <button
             onClick={toggleTheme}
             className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400"
+            aria-label="Toggle theme"
           >
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
           <button 
-            className="text-zinc-900 dark:text-zinc-100"
+            className="text-zinc-900 dark:text-zinc-100 p-1"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle menu"
           >
             {isMenuOpen ? <X size={32} /> : <Menu size={32} />}
           </button>
@@ -95,23 +115,28 @@ const Navbar: React.FC<NavbarProps> = ({ isMenuOpen, setIsMenuOpen, theme, toggl
 
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
-        <div className="fixed inset-0 top-20 bg-white dark:bg-zinc-950 z-40 md:hidden flex flex-col p-8 gap-8 border-t border-zinc-200 dark:border-zinc-900 animate-in fade-in slide-in-from-top-4 duration-300">
-          {navLinks.map((link) => (
-            <button 
-              key={link.name} 
-              className="text-3xl font-serif font-bold text-left text-zinc-900 dark:text-zinc-100 hover:text-indigo-900 dark:hover:text-amber-600 transition-colors"
-              onClick={() => handleLinkClick(link.to)}
+        <div className="fixed inset-0 top-20 bg-white dark:bg-zinc-950 z-[100] md:hidden flex flex-col p-8 transition-all animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex flex-col gap-6 mt-4">
+            {navLinks.map((link) => (
+              <button 
+                key={link.name} 
+                className="text-4xl font-serif font-bold text-left text-zinc-900 dark:text-zinc-100 hover:text-indigo-900 dark:hover:text-amber-600 transition-colors border-b border-zinc-100 dark:border-zinc-900 pb-4"
+                onClick={() => handleLinkClick(link.to)}
+              >
+                {link.name}
+              </button>
+            ))}
+          </div>
+          
+          <div className="mt-auto mb-10">
+            <Link 
+              to="/book" 
+              className="block w-full bg-indigo-900 dark:bg-amber-600 text-white dark:text-zinc-950 font-bold p-5 text-center rounded-sm text-xl uppercase tracking-widest shadow-2xl active:scale-[0.98] transition-transform"
+              onClick={() => setIsMenuOpen(false)}
             >
-              {link.name}
-            </button>
-          ))}
-          <Link 
-            to="/book" 
-            className="bg-indigo-900 dark:bg-amber-600 text-white dark:text-zinc-950 font-bold p-4 text-center rounded-sm text-xl uppercase tracking-widest mt-auto shadow-xl"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Book Appointment
-          </Link>
+              Book Appointment
+            </Link>
+          </div>
         </div>
       )}
     </nav>
