@@ -14,7 +14,6 @@ const Navbar: React.FC<NavbarProps> = ({ isMenuOpen, setIsMenuOpen, theme, toggl
   const navigate = useNavigate();
   const isHome = location.pathname === '/';
 
-  // BLOCK SCROLLING: This is crucial for mobile
   useEffect(() => {
     if (isMenuOpen) {
       document.body.style.overflow = 'hidden';
